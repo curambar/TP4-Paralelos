@@ -57,10 +57,9 @@ public class Buffer {
      * Intenta producir un item en la cola.
      *
      * @param item       el objeto a producir.
-     * @param nombreHilo identifica el hilo.
      * @throws InterruptedException si el hilo es interrumpido.
      */
-    public void producir(int item, String nombreHilo) throws InterruptedException {
+    public void producir(int item) throws InterruptedException {
         vacios.acquire();
         mutex.acquire();
         try {
@@ -75,14 +74,12 @@ public class Buffer {
     /**
      * Intenta consumir un hilo.
      *
-     * @param nombreHilo identifica el hilo.
      * @throws InterruptedException si el hilo es interrumpido.
      */
-    public void consumir(String nombreHilo) throws InterruptedException {
+    public void consumir() throws InterruptedException {
         llenos.acquire();
         mutex.acquire();
         try {
-            int item = buffer[out];
             buffer[out] = 0;        // Para que se vea visualmente que está vacío.
             out = (1 + out) % size; // Incrementa el contador circular.
         } finally {

@@ -20,9 +20,8 @@ public class Productor implements Runnable{
         while (true){
             try {
                 Thread.sleep(random.nextInt(1000) + 500);
-                buffer.producir(item++, Thread.currentThread().getName());
+                buffer.producir(item++);
             } catch (InterruptedException e) {
-                System.out.println(Thread.currentThread().getName() + " interrumpido.");
                 Thread.currentThread().interrupt();
                 break;
             }

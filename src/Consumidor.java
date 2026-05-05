@@ -16,9 +16,8 @@ public class Consumidor implements Runnable{
         while(true){
             try {
                 Thread.sleep(random.nextInt(1500) + 500);
-                buffer.consumir(Thread.currentThread().getName());
+                buffer.consumir();
             } catch (InterruptedException e) {
-                System.out.println(Thread.currentThread().getName() + " interrumpido.");
                 Thread.currentThread().interrupt();
                 break;
             }
