@@ -1,3 +1,8 @@
+/**
+ * Captura los valores de los controles deslizantes y solicita al servidor
+ * reiniciar la simulación con los nuevos parámetros de productores,
+ * consumidores y tamaño del buffer.
+ */
 function reiniciar() {
     const p = document.getElementById('prodSlider').value;
     const c = document.getElementById('consSlider').value;
@@ -5,6 +10,11 @@ function reiniciar() {
     fetch(`/api/config?p=${p}&c=${c}&s=${s}`, {method: 'POST'});
 }
 
+/**
+ * Bucle de actualización (Polling).
+ * Consulta el estado del servidor cada 200 milisegundos y actualiza el DOM
+ * en tiempo real reflejando semáforos, buffer e hilos.
+ */
 setInterval(() => {
     fetch('/api/estado', { cache: 'no-store' })
         .then(res => res.json())
@@ -32,7 +42,7 @@ setInterval(() => {
                 bufferUI.appendChild(slot);
             });
 
-            // 3. Dibujar Hilos con traductor temático
+            // 3. Dibujar Hilos con traductor temático para los paneles laterales
             const dibujarHilos = (panelId, hilos) => {
                 const panel = document.getElementById(panelId);
                 panel.innerHTML = panel.firstElementChild.outerHTML;
@@ -41,7 +51,7 @@ setInterval(() => {
                     const card = document.createElement('div');
                     card.className = `tarjeta-hilo estado-${hilo.estado}`;
 
-                    // Traductor de estados a temática de restaurante
+                    // 3. Dibujar Hilos con traductor temático para los paneles laterales
                     let textoEstado = "";
                     if (hilo.estado === "TRABAJANDO") {
                         textoEstado = hilo.id.includes("Cliente") ? "Mirando Menú..." : "Cocinando...";

@@ -3,25 +3,35 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
- * Representa una cola de producción.
+ * Representa una cola de producción (Bandeja de pedidos) circular.
+ * Gestiona el acceso concurrente mediante semáforos para garantizar
+ * la sincronización entre productores y consumidores.
  */
 public class Buffer {
 
-    private int size;
-    private int[] buffer;
+    /** Capacidad máxima del buffer circular. */
+    private final int size;
+    /** Arreglo interno que almacena los pedidos. */
+    private final int[] buffer;
+    /** Puntero circular para la próxima inserción. */
     private int in = 0;
+    /** Puntero circular para la próxima extracción. */
     private int out = 0;
-    private Semaphore mutex;
-    private Semaphore vacios;
-    private Semaphore llenos;
-    // Mapa concurrente
-    private Map<String, String> estadoHilos = new ConcurrentHashMap<>();
+    /** Semáforo para asegurar la exclusión mutua en la sección crítica. */
+    private final Semaphore mutex;
+    /** Semáforo contador de espacios disponibles en la bandeja. */
+    private final Semaphore vacios;
+    /** Semáforo contador de pedidos listos para ser procesados. */
+    private final Semaphore llenos;
+
+    /** Mapa concurrente que almacena el estado actual de cada hilo para la interfaz. */
+    private final Map<String, String> estadoHilos = new ConcurrentHashMap<>();
 
 
     /**
-     * Crea una cola del tamaño especificado.
+     * Crea una cola del tamaño especificado e inicializa los semáforos correspondientes.
      *
-     * @param size el tamaño, entero positivo.
+     * @param size El tamaño de la cola, debe ser un entero positivo.
      */
     public Buffer(int size) {
         this.size = size;
@@ -31,15 +41,23 @@ public class Buffer {
         this.llenos = new Semaphore(0);
     }
 
+    /**
+     * Actualiza el estado visual de un hilo en el mapa concurrente.
+     *
+     * @param nombreHilo Identificador del hilo (ej. Cliente-1, Cocinero-2).
+     * @param estado Etiqueta representativa del estado actual del hilo.
+     */
     public void setEstado(String nombreHilo, String estado){
         estadoHilos.put(nombreHilo, estado);
     }
 
     /**
-     * Intenta producir un item en la cola.
+     * Intenta insertar un pedido (item) en el buffer.
+     * Se bloquea si no hay espacios vacíos o si la sección crítica está ocupada.
      *
-     * @param item       el objeto a producir.
-     * @throws InterruptedException si el hilo es interrumpido.
+     * @param item El número de pedido a producir.
+     * @param nombre El identificador del hilo productor que realiza la acción.
+     * @throws InterruptedException Si el hilo es interrumpido durante la espera.
      */
     public void producir(int item, String nombre) throws InterruptedException {
         setEstado(nombre, "ESPERANDO");
@@ -57,9 +75,11 @@ public class Buffer {
     }
 
     /**
-     * Intenta consumir un hilo.
+     * Intenta retirar y procesar un pedido del buffer.
+     * Se bloquea si no hay elementos disponibles o si la sección crítica está ocupada.
      *
-     * @throws InterruptedException si el hilo es interrumpido.
+     * @param nombre El identificador del hilo consumidor que realiza la acción.
+     * @throws InterruptedException Si el hilo es interrumpido durante la espera.
      */
     public void consumir(String nombre) throws InterruptedException {
         setEstado(nombre, "ESPERANDO");
@@ -77,10 +97,11 @@ public class Buffer {
     }
 
     /**
-     * Recopila información del estado del Buffer y sus semáforos en formato JSON.
-     * Adquiere el mutex antes de leer, asegurando lectura atómica.
+     * Recopila información en tiempo real del estado del Buffer, semáforos
+     * y los estados de los hilos en formato JSON.
+     * Adquiere el mutex antes de leer para asegurar una lectura atómica consistente.
      *
-     * @return un JSON que representa el estado del sistema.
+     * @return Una cadena en formato JSON representando el estado global del sistema.
      */
     public String toJson() {
         StringBuilder sb = new StringBuilder();

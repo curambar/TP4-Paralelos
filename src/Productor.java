@@ -1,18 +1,30 @@
 import java.util.Random;
 
 /**
- *
+ * Representa un hilo productor (Cliente).
+ * Simula el comportamiento de creación de pedidos de manera concurrente
+ * para insertarlos en el buffer compartido.
  */
 public class Productor implements Runnable{
-    private Buffer buffer;
-    private Random random = new Random();
 
+    /** Referencia al buffer compartido en el que se insertarán elementos. */
+    private final Buffer buffer;
+    /** Generador de tiempos aleatorios para simular el tiempo de creación del pedido. */
+    private final Random random = new Random();
+
+    /**
+     * Inicializa un nuevo hilo productor.
+     *
+     * @param buffer La instancia del buffer compartido.
+     */
     public Productor(Buffer buffer){
         this.buffer = buffer;
     }
 
     /**
-     *
+     * Ciclo de vida principal del hilo.
+     * Alterna entre un estado de trabajo (simulado por un retraso aleatorio) y la
+     * intención de depositar un número de pedido incremental en la bandeja compartida.
      */
     @Override
     public void run() {

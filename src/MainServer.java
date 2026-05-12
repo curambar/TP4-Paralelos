@@ -8,12 +8,24 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Clase principal que levanta un servidor HTTP para la interfaz gráfica web
+ * y gestiona el ciclo de vida de los hilos de la simulación concurrente.
+ */
 public class MainServer {
-    private static List<Thread> hilosActivos = new ArrayList<>();
+    /** Lista de hilos productores y consumidores actualmente en ejecución. */
+    private static final List<Thread> hilosActivos = new ArrayList<>();
 
-    // CORRECCIÓN 3: Declaramos el buffer a nivel global para que la web lo pueda leer
+    /** Referencia global al buffer actual, accesible para los endpoints HTTP. */
     private static Buffer bufferActual;
 
+    /**
+     * Punto de entrada principal. Inicia la simulación por defecto y configura
+     * los endpoints del servidor web para despachar archivos y manejar la API.
+     *
+     * @param args Argumentos de línea de comandos (no utilizados).
+     * @throws IOException Si ocurre un error al iniciar el servidor en el puerto 8080.
+     */
     public static void main(String[] args) throws IOException {
         reiniciarSimulacion(2, 2, 5);
 
@@ -70,7 +82,7 @@ public class MainServer {
             }
         });
 
-        // CORRECCIÓN 1: Restauramos el endpoint de estado que faltaba
+        // Endpoint de lectura de estado para el frontend
         server.createContext("/api/estado", exchange -> {
             if (bufferActual != null) {
                 String jsonResponse = bufferActual.toJson();
@@ -82,7 +94,7 @@ public class MainServer {
             }
         });
 
-        // Recibir valores de sliders
+        // Endpoint para recibir valores de configuración y reiniciar la simulación
         server.createContext("/api/config", exchange -> {
             if ("POST".equals(exchange.getRequestMethod())) {
                 String query = exchange.getRequestURI().getQuery();
@@ -106,13 +118,21 @@ public class MainServer {
         System.out.println("Servidor iniciado en http://localhost:8080");
     }
 
+    /**
+     * Interrumpe los hilos en ejecución, limpia la lista de hilos activos y crea
+     * una nueva instancia de la simulación con los parámetros indicados.
+     * Es sincronizado para evitar condiciones de carrera durante la recarga.
+     *
+     * @param numProds Cantidad de hilos productores (Clientes).
+     * @param numConsum Cantidad de hilos consumidores (Cocineros).
+     * @param buffSize Capacidad máxima de la bandeja (Buffer).
+     */
     private static synchronized void reiniciarSimulacion(int numProds, int numConsum, int buffSize) {
         for (Thread thread : hilosActivos) {
             thread.interrupt();
         }
         hilosActivos.clear();
 
-        // CORRECCIÓN 3: Asignamos a la variable global (sin poner la palabra "Buffer" al inicio)
         bufferActual = new Buffer(buffSize);
 
         // Iniciamos los hilos Productores (Ahora Clientes)
