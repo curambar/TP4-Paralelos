@@ -115,18 +115,20 @@ public class MainServer {
         // CORRECCIÓN 3: Asignamos a la variable global (sin poner la palabra "Buffer" al inicio)
         bufferActual = new Buffer(buffSize);
 
-        //Iniciamos los hilos productores
+        // Iniciamos los hilos Productores (Ahora Clientes)
         for (int i = 0; i < numProds; i++) {
-            Thread t = new Thread(new Productor(bufferActual), "Productor-" + i);
+            Thread t = new Thread(new Productor(bufferActual), "Cliente-" + (i+1));
             hilosActivos.add(t);
             t.start();
         }
 
+        // Iniciamos los hilos Consumidores (Ahora Cocineros)
         for (int i = 0; i < numConsum; i++) {
-            Thread t = new Thread(new Consumidor(bufferActual), "Consumidor-" + i);
+            Thread t = new Thread(new Consumidor(bufferActual), "Cocinero-" + (i+1));
             hilosActivos.add(t);
             t.start();
         }
+
         System.out.printf("Simulación reiniciada: %d productores | %d Consumidores | %d Bandeja%n", numProds,
                 numConsum, buffSize);
     }

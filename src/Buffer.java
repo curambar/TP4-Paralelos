@@ -1,3 +1,5 @@
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -5,40 +7,16 @@ import java.util.concurrent.Semaphore;
  */
 public class Buffer {
 
-    /**
-     * El tamaño del buffer. Entero positivo.
-     */
     private int size;
-
-    /**
-     * La cola de producción.
-     */
     private int[] buffer;
-
-    /**
-     * Índice de producción.
-     */
     private int in = 0;
-
-    /**
-     * Índice de consumo.
-     */
     private int out = 0;
-
-    /**
-     * Mutex binario. Controla el acceso a la cola.
-     */
     private Semaphore mutex;
-
-    /**
-     * Cuenta los espacios disponibles.
-     */
     private Semaphore vacios;
-
-    /**
-     * Cuenta los espacios listos para ser leidos.
-     */
     private Semaphore llenos;
+    // Mapa concurrente
+    private Map<String, String> estadoHilos = new ConcurrentHashMap<>();
+
 
     /**
      * Crea una cola del tamaño especificado.
@@ -53,18 +31,25 @@ public class Buffer {
         this.llenos = new Semaphore(0);
     }
 
+    public void setEstado(String nombreHilo, String estado){
+        estadoHilos.put(nombreHilo, estado);
+    }
+
     /**
      * Intenta producir un item en la cola.
      *
      * @param item       el objeto a producir.
      * @throws InterruptedException si el hilo es interrumpido.
      */
-    public void producir(int item) throws InterruptedException {
+    public void producir(int item, String nombre) throws InterruptedException {
+        setEstado(nombre, "ESPERANDO");
         vacios.acquire();
         mutex.acquire();
         try {
+            setEstado(nombre, "SECCION_CRITICA");
             buffer[in] = item;
             in = (1 + in) % size; // incrementa el contador circular.
+            Thread.sleep(200); // Para que se alcance a ver el cambio de color
         } finally {
             mutex.release();
             llenos.release();
@@ -76,12 +61,15 @@ public class Buffer {
      *
      * @throws InterruptedException si el hilo es interrumpido.
      */
-    public void consumir() throws InterruptedException {
+    public void consumir(String nombre) throws InterruptedException {
+        setEstado(nombre, "ESPERANDO");
         llenos.acquire();
         mutex.acquire();
         try {
+            setEstado(nombre, "SECCION_CRITICA");
             buffer[out] = 0;        // Para que se vea visualmente que está vacío.
             out = (1 + out) % size; // Incrementa el contador circular.
+            Thread.sleep(200);
         } finally {
             mutex.release();
             vacios.release();
@@ -100,6 +88,8 @@ public class Buffer {
             mutex.acquire(); // Con esto bloqueamos productores y consumidores.
 
             sb.append("{");
+
+            // Buffer
             sb.append("\"buffer\": [");
             for (int i = 0; i < size; i++) {
                 sb.append(buffer[i]);
@@ -108,12 +98,40 @@ public class Buffer {
             sb.append("], ");
             sb.append("\"in\": ").append(in).append(", ");
             sb.append("\"out\": ").append(out).append(", ");
+
+            // Semaforos
             sb.append("\"mutex\": ").append(mutex.availablePermits()).append(", ");
             sb.append("\"vacios\": ").append(vacios.availablePermits()).append(", ");
-            sb.append("\"llenos\": ").append(llenos.availablePermits());
+            sb.append("\"llenos\": ").append(llenos.availablePermits()).append(", ");
+
+            // Productores
+            sb.append("\"productores\": [");
+            boolean primerP = true;
+            for (Map.Entry<String, String> entry : estadoHilos.entrySet()) {
+                if(entry.getKey().startsWith("Cliente")){
+                    if (!primerP) sb.append(", ");
+                    sb.append("{\"id\": \"").append(entry.getKey()).append("\", \"estado\": \"").append(entry.getValue()).append("\"}");
+                    primerP = false;
+                }
+            }
+            sb.append("], ");
+
+            // Consumidores
+            sb.append("\"consumidores\": [");
+            boolean primerC = true;
+            for (Map.Entry<String, String> entry : estadoHilos.entrySet()) {
+                if(entry.getKey().startsWith("Cocinero")){
+                    if (!primerC) sb.append(", ");
+                    sb.append("{\"id\": \"").append(entry.getKey()).append("\", \"estado\": \"").append(entry.getValue()).append("\"}");
+                    primerC = false;
+                }
+            }
+            sb.append("]");
+
             sb.append("}");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return "{}";
         } finally {
             mutex.release();
         }

@@ -2,187 +2,56 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Simulador Productor - Consumidor con semáforos</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e1e;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .controls {
-            background: #2d2d2d;
-            padding: 20px;
-            border-radius: 10px;
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        button {
-            padding: 10px 20px;
-            background: #007acc;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: auto;
-        }
-
-        button:hover {
-            background: #005999;
-        }
-
-        .buffer-container {
-            display: flex;
-            gap: 10px;
-            margin: 30px 0;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 800px;
-        }
-
-        .slot {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            background: #444;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: bold;
-            transition: 0.2s;
-            position: relative;
-            border: 2px solid #555;
-        }
-
-        .slot.full {
-            background: #28a745;
-            border-color: #1e7e34;
-        }
-
-        .pointer {
-            position: absolute;
-            font-size: 12px;
-            top: -25px;
-            font-weight: bold;
-        }
-
-        .in-ptr {
-            color: #ffc107;
-        }
-
-        .out-ptr {
-            color: #17a2b8;
-            bottom: -25px;
-            top: auto;
-        }
-
-        .semaforos {
-            display: flex;
-            gap: 30px;
-            margin-top: 20px;
-        }
-
-        .sem-box {
-            background: #2d2d2d;
-            padding: 15px 30px;
-            border-radius: 10px;
-            text-align: center;
-            border-left: 5px solid #007acc;
-        }
-
-        .sem-value {
-            font-size: 30px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-    </style>
+    <title>Concurrencia: App de Pedidos</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<h1>Monitoreo de Semáforos en Tiempo Real</h1>
+<h1>🍔 App Delivery: Sincronización Concurrente</h1>
 
 <div class="controls">
     <div class="control-group">
-        <label>Productores: <span id="valProd">2</span></label>
-        <input type="range" min="1" max="10" value="2" id="prodSlider"
-               oninput="document.getElementById('valProd').innerText=this.value"/>
+        <label for="prodSlider">Clientes (Pedidos): <span id="valProd">2</span></label>
+        <input type="range" id="prodSlider" min="1" max="15" value="2" oninput="document.getElementById('valProd').innerText=this.value">
     </div>
     <div class="control-group">
-        <label>Consumidores: <span id="valCons">2</span></label>
-        <input type="range" min="1" max="10" value="2" id="consSlider"
-               oninput="document.getElementById('valCons').innerText=this.value"/>
+        <label for="consSlider">Cocineros: <span id="valCons">2</span></label>
+        <input type="range" id="consSlider" min="1" max="15" value="2" oninput="document.getElementById('valCons').innerText=this.value">
     </div>
     <div class="control-group">
-        <label>Tamaño Buffer: <span id="valSize">5</span></label>
-        <input type="range" min="3" max="20" value="5" id="sizeSlider"
-               oninput="document.getElementById('valSize').innerText=this.value"/>
+        <label for="sizeSlider">Capacidad Bandeja: <span id="valSize">5</span></label>
+        <input type="range" id="sizeSlider" min="3" max="20" value="5" oninput="document.getElementById('valSize').innerText=this.value">
     </div>
-    <button onclick="reiniciar()">Aplicar y Reiniciar</button>
+    <button onclick="reiniciar()">Aplicar Cambios</button>
 </div>
 
-<div class="buffer-container" id="bufferUI"></div>
+<div class="layout-principal">
 
-<div class="semaforos">
-    <div class="sem-box">Mutex
-        <div class="sem-value" id="semMutex">-</div>
+    <div class="columna-actores" id="panel-productores">
+        <h3>📱 Clientes</h3>
     </div>
-    <div class="sem-box">Vacíos
-        <div class="sem-value" id="semVacios">-</div>
+
+    <div class="columna-centro">
+        <div class="buffer-container" id="bufferUI"></div>
+
+        <div class="semaforos">
+            <div class="sem-box" id="cajaVacios">
+                <div class="sem-label">Espacio en Bandeja</div>
+                <div class="sem-value" id="semVacios">-</div>
+            </div>
+            <div class="sem-box" id="cajaLlenos">
+                <div class="sem-label">Tickets Pendientes</div>
+                <div class="sem-value" id="semLlenos">-</div>
+            </div>
+        </div>
     </div>
-    <div class="sem-box">Llenos
-        <div class="sem-value" id="semLlenos">-</div>
+
+    <div class="columna-actores" id="panel-consumidores">
+        <h3>👨‍🍳 Cocineros</h3>
     </div>
+
 </div>
 
-<script>
-    // Envía valores a Java
-    function reiniciar() {
-        const p = document.getElementById('prodSlider').value;
-        const c = document.getElementById('consSlider').value;
-        const s = document.getElementById('sizeSlider').value;
-        fetch(`/api/config?p=${p}&c=${c}&s=${s}`, {method: 'POST'});
-    }
-
-    //Renderizado y consulta
-    setInterval(() => {
-        fetch('/api/estado')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('semMutex').innerText = data.mutex;
-                document.getElementById('semVacios').innerText = data.vacios;
-                document.getElementById('semLlenos').innerText = data.llenos;
-
-                const bufferUI = document.getElementById('bufferUI');
-                bufferUI.innerHTML = '';
-
-                data.buffer.forEach((val, index) => {
-                    const slot = document.createElement('div');
-                    slot.className = 'slot ' + (val !== 0 ? 'full' : '');
-                    slot.innerText = val !== 0 ? val : '';
-
-                    if(index === data.in) slot.innerHTML += '<div class="pointer in-ptr">IN ↓</div>';
-                    if (index === data.out) slot.innerHTML += '<div class="pointer out-ptr">OUT ↑</div>';
-
-                    bufferUI.appendChild(slot);
-                });
-            })
-            .catch(err => console.log("Error de conexión. ¿Está Java corriendo?", err));
-    }, 200);
-</script>
+<script src="api.js"></script>
 </body>
 </html>

@@ -17,10 +17,14 @@ public class Productor implements Runnable{
     @Override
     public void run() {
         int item = 1;
+        String nombre = Thread.currentThread().getName();
+
         while (true){
             try {
-                Thread.sleep(random.nextInt(1000) + 500);
-                buffer.producir(item++);
+                buffer.setEstado(nombre, "TRABAJANDO");
+                //noinspection BusyWait
+                Thread.sleep(random.nextInt(1500) + 500);
+                buffer.producir(item++, nombre);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

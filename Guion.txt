@@ -1,0 +1,91 @@
+Guion de Video: "Sincronización Concurrente con Semáforos en Java"
+🎬 PARTE 1: Introducción y Planteo del Problema (0:00 - 1:00)
+
+[Visual en Pantalla]
+
+    Tú hablando a la cámara.
+
+    Aparece un texto en pantalla: "Problema Clásico: Productor - Consumidor".
+
+    Transición a un pequeño diagrama conceptual o animación de una hamburguesería (Clientes de un lado, Cocineros del otro, una bandeja central).
+
+[Audio / Narración]
+"Hola a todos. En el desarrollo de Sistemas Distribuidos y Paralelos, coordinar múltiples tareas al mismo tiempo es un desafío constante. Hoy vamos a resolver el clásico problema del 'Productor y Consumidor', pero le daremos un giro del mundo real: vamos a modelar una App de Pedidos de Comida.
+Nuestros 'Productores' serán los Clientes enviando tickets de pedidos, y nuestros 'Consumidores' serán los Cocineros preparándolos. El recurso compartido será una Bandeja central con capacidad limitada.
+Para resolver esto, dejaremos atrás los Monitores tradicionales de Java y utilizaremos el paradigma de sincronización inventado por Edsger Dijkstra: Los Semáforos."
+🎬 PARTE 2: La Teoría - El Modelo de 3 Semáforos (1:00 - 2:30)
+
+[Visual en Pantalla]
+
+    Captura de pantalla de la clase Buffer.java enfocando el constructor y las tres variables Semaphore.
+
+    Aparecen 3 íconos en pantalla representando cada semáforo y su valor inicial:
+
+        Caja vacía (Espacio) = 5
+
+        Ticket (Pedidos) = 0
+
+        Llave (Mutex) = 1
+
+[Audio / Narración]
+"Para que nuestra hamburguesería no colapse, necesitamos usar exactamente tres semáforos.
+Primero, los semáforos de Sincronización de Condición:
+
+    El semáforo vacios: Inicia con el tamaño máximo de la bandeja (por ejemplo, 5). Le dice al cliente si hay espacio para poner un nuevo ticket.
+
+    El semáforo llenos: Inicia en 0. Le dice al cocinero si hay tickets pendientes por procesar.
+    Segundo, el semáforo de Exclusión Mutua:
+
+    El mutex: Inicia en 1. Es la 'llave' física de la bandeja. Asegura que solo una persona (ya sea cliente o cocinero) meta la mano al mismo tiempo para no corromper los datos."
+
+🎬 PARTE 3: El Peligro del Abrazo Mortal (Deadlock) (2:30 - 3:45)
+
+[Visual en Pantalla]
+
+    Muestras el método producir() con un recuadro rojo destacando el orden: vacios.acquire() seguido de mutex.acquire().
+
+    Efecto de sonido de "Alerta" y un texto que diga: "¡Cuidado con el Deadlock!".
+
+[Audio / Narración]
+"Aquí es donde muchos programadores fallan. El orden en el que pedimos los permisos, los acquire(), es una cuestión de vida o muerte para el sistema.
+Fíjense que el Cliente primero pide un espacio (vacios.acquire()) y recién después toma la llave de la bandeja (mutex.acquire()).
+¿Qué pasaría si lo invertimos? Si el cliente toma la llave primero, y luego ve que la bandeja está llena, se quedará esperando con la llave en la mano. El cocinero intentará entrar para sacar una hamburguesa y liberar espacio, pero no podrá porque el cliente tiene la llave. Ambos se quedarán bloqueados para siempre. Esto se conoce como Abrazo Mortal o Deadlock, y este orden estricto es la única forma de evitarlo."
+🎬 PARTE 4: Arquitectura y Web (Separation of Concerns) (3:45 - 5:00)
+
+[Visual en Pantalla]
+
+    Muestras un diagrama rápido: Backend (Java Puro) <--> JSON <--> Frontend (HTML/JS).
+
+    Captura de pantalla rápida del ConcurrentHashMap y el método toJson().
+
+[Audio / Narración]
+"Para visualizar esto de forma dinámica, aplicamos el principio de Separación de Responsabilidades. No usamos interfaces gráficas estáticas. Convertimos nuestro código Java en un motor lógico, levantando un servidor HTTP puro con la clase HttpServer nativa del JDK.
+Java empaqueta el estado del buffer, los permisos de los semáforos y el estado de cada hilo en un archivo JSON.
+Para rastrear qué hace cada hilo sin generar cuellos de botella por bloqueos, usamos un ConcurrentHashMap. Así, el Frontend (nuestra página HTML y JavaScript) le pregunta a Java cada 200 milisegundos cómo van las cosas, y dibuja la pantalla en tiempo real."
+🎬 PARTE 5: Demostración Práctica (Vibe Coding) (5:00 - 6:30)
+
+[Visual en Pantalla]
+
+    Grabación de pantalla de tu navegador mostrando la aplicación funcionando.
+
+    Haces zoom a la bandeja central viendo cómo entra "NUEVO" y "SALE".
+
+    Mueves los sliders: Pones 10 clientes y 1 cocinero.
+
+    Muestras cómo las tarjetas de los clientes cambian a gris ("Esperando Espacio").
+
+[Audio / Narración]
+"Veamos la simulación en marcha. Tenemos nuestro diseño en 'Línea de Ensamblaje'. A la izquierda los clientes, al centro los recursos y semáforos, y a la derecha los cocineros.
+Observen cómo cambian los estados. El destello verde significa que un hilo ganó el mutex y está en la Sección Crítica.
+Si estresamos el sistema poniendo 10 clientes rápidos y un solo cocinero lento, rápidamente el semáforo de espacios llega a 0. Visualmente vemos cómo el Sistema Operativo suspende a los clientes: sus tarjetas se vuelven grises y entran en estado 'Esperando Espacio'. El sistema concurrente se auto-regula perfectamente gracias a los semáforos."
+🎬 PARTE 6: Conclusión (6:30 - Fin)
+
+[Visual en Pantalla]
+
+    Tú en cámara.
+
+    Texto de resumen: "Semáforos = Coordinación Segura + API Web REST + UI Reactiva".
+
+[Audio / Narración]
+"En conclusión, pasar de primitivas nativas a Semáforos nos obliga a pensar estratégicamente en el flujo de los recursos, no solo en bloquear memoria. Y al exponer este motor concurrente mediante una API REST en Java puro, demostramos que la concurrencia de backend puede integrarse limpiamente con interfaces web modernas.
+Espero que esta simulación haya dejado claro el inmenso poder de los semáforos. ¡Muchas gracias por ver el video!"
