@@ -120,7 +120,7 @@ public class Buffer {
             sb.append("\"in\": ").append(in).append(", ");
             sb.append("\"out\": ").append(out).append(", ");
 
-            // Semaforos
+            // Semáforos
             sb.append("\"mutex\": ").append(mutex.availablePermits()).append(", ");
             sb.append("\"vacios\": ").append(vacios.availablePermits()).append(", ");
             sb.append("\"llenos\": ").append(llenos.availablePermits()).append(", ");
