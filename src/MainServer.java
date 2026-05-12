@@ -11,6 +11,9 @@ import java.util.List;
 public class MainServer {
     private static List<Thread> hilosActivos = new ArrayList<>();
 
+    // CORRECCIÓN 3: Declaramos el buffer a nivel global para que la web lo pueda leer
+    private static Buffer bufferActual;
+
     public static void main(String[] args) throws IOException {
         reiniciarSimulacion(2, 2, 5);
 
@@ -18,17 +21,70 @@ public class MainServer {
 
         // Servir la página en HTML
         server.createContext("/", exchange -> {
-            byte[] respuesta = Files.readAllBytes(Paths.get("index.html"));
-            exchange.sendResponseHeaders(200, respuesta.length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(respuesta);
-            os.close();
+            try {
+                // CORRECCIÓN 2: Protegemos la lectura del HTML con un try-catch
+                byte[] respuesta = Files.readAllBytes(Paths.get("src", "index.html"));
+                        exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                exchange.sendResponseHeaders(200, respuesta.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(respuesta);
+                os.close();
+            } catch (IOException e) {
+                // Si el HTML no está en la ruta correcta, ahora te lo avisa sin hacer "Net Reset"
+                String error =
+                        "ERROR: No se encontro el archivo index.html. Debe estar en esta ruta exacta: " + Paths.get(
+                                "index.html").toAbsolutePath();
+                exchange.sendResponseHeaders(404, error.length());
+                OutputStream os = exchange.getResponseBody();
+                os.write(error.getBytes());
+                os.close();
+                System.out.println(error);
+            }
+        });
+
+        // Servir el archivo CSS
+        server.createContext("/styles.css", exchange -> {
+            try {
+                byte[] respuesta = Files.readAllBytes(Paths.get("src", "styles.css"));
+                exchange.getResponseHeaders().set("Content-Type", "text/css; charset=UTF-8");
+                exchange.sendResponseHeaders(200, respuesta.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(respuesta);
+                os.close();
+            } catch (IOException e) {
+                exchange.sendResponseHeaders(404, -1);
+            }
+        });
+
+        // Servir el archivo JavaScript
+        server.createContext("/api.js", exchange -> {
+            try {
+                byte[] respuesta = Files.readAllBytes(Paths.get("src", "api.js"));
+                exchange.getResponseHeaders().set("Content-Type", "application/javascript; charset=UTF-8");
+                exchange.sendResponseHeaders(200, respuesta.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(respuesta);
+                os.close();
+            } catch (IOException e) {
+                exchange.sendResponseHeaders(404, -1);
+            }
+        });
+
+        // CORRECCIÓN 1: Restauramos el endpoint de estado que faltaba
+        server.createContext("/api/estado", exchange -> {
+            if (bufferActual != null) {
+                String jsonResponse = bufferActual.toJson();
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, jsonResponse.length());
+                OutputStream os = exchange.getResponseBody();
+                os.write(jsonResponse.getBytes());
+                os.close();
+            }
         });
 
         // Recibir valores de sliders
         server.createContext("/api/config", exchange -> {
             if ("POST".equals(exchange.getRequestMethod())) {
-                // Leemos parámetros de la URL
                 String query = exchange.getRequestURI().getQuery();
                 String[] params = query.split("&");
                 int p = Integer.parseInt(params[0].split("=")[1]);
@@ -50,19 +106,14 @@ public class MainServer {
         System.out.println("Servidor iniciado en http://localhost:8080");
     }
 
-    /**
-     * Detiene los hilos actuales y crea nuevos con las cantidades provistas.
-     * @param numProds el número de productores, entero positivo.
-     * @param numConsum el número de productores, entero positivo.
-     * @param buffSize el número de productores, entero positivo.
-     */
     private static synchronized void reiniciarSimulacion(int numProds, int numConsum, int buffSize) {
-        for(Thread thread : hilosActivos) {
+        for (Thread thread : hilosActivos) {
             thread.interrupt();
         }
         hilosActivos.clear();
 
-        Buffer bufferActual = new Buffer(buffSize);
+        // CORRECCIÓN 3: Asignamos a la variable global (sin poner la palabra "Buffer" al inicio)
+        bufferActual = new Buffer(buffSize);
 
         //Iniciamos los hilos productores
         for (int i = 0; i < numProds; i++) {
@@ -76,6 +127,7 @@ public class MainServer {
             hilosActivos.add(t);
             t.start();
         }
-        System.out.printf("Similación reiniciada: %d productores | %d Consumidores | %d Bandeja%n", numProds, numConsum, buffSize);
+        System.out.printf("Simulación reiniciada: %d productores | %d Consumidores | %d Bandeja%n", numProds,
+                numConsum, buffSize);
     }
 }
