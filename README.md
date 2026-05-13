@@ -2,6 +2,8 @@
 
 Esta aplicación es una demostración visual y pedagógica del problema clásico de sincronización de hilos **Productor-Consumidor**. Utiliza una temática de restaurante donde los hilos "Clientes" generan pedidos y los hilos "Cocineros" los procesan, interactuando a través de una "Bandeja" (Buffer) de capacidad limitada.
 
+Es un trabajo del alumno Leandro Suarez para la materia Introducción a los Sistemas Distribuidos y Paralelos 2026 en la Universidad Nacional de Rio Negro, Sede Andina.
+
 ## Características
 
 * **Visualización en Tiempo Real:** Interfaz web que muestra el estado de cada hilo (Trabajando, Esperando, Sección Crítica).
